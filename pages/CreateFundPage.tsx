@@ -5,21 +5,13 @@ import { ethers } from 'ethers';
 import Switch from '../components/Switch';
 import { useWallet } from '../contexts/WalletContext';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
+import {
+    ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS,
+    DENOMINATION_ASSET_ADDRESSES,
+    ENTRANCE_RATE_DIRECT_FEE_ADDRESS, FUND_DEPLOYER_ABI,
+    FUND_DEPLOYER_ADDRESS
+} from "../constants/contracts.ts";
 
-// --- Contract Details (for demonstration) ---
-// In a real-world app, this would come from a config file or environment variables.
-const FUND_FACTORY_ADDRESS = import.meta.env.VITE_FUND_FACTORY_ADDRESS; // Example address
-const DENOMINATION_ASSET_ADDRESSES: { [key: string]: string } = {
-    'USDC': import.meta.env.VITE_USDC_ADDRESS,
-    'WETH': import.meta.env.VITE_WETH_ADDRESS,
-    'ASVT': import.meta.env.VITE_ASVT_ADDRESS,
-};
-const FUND_FACTORY_ABI = [
-    { "inputs": [], "name": "deployedFunds", "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }], "stateMutability": "view", "type": "function" },
-    { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "fundAddress", "type": "address" }, { "indexed": true, "internalType": "address", "name": "manager", "type": "address" }, { "internalType": "string", "name": "fundName", "type": "string" }, { "indexed": false, "internalType": "address", "name": "denominationAsset", "type": "address" }], "name": "FundCreated", "type": "event" },
-    { "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_symbol", "type": "string" }, { "internalType": "address", "name": "_denominationAsset", "type": "address" }], "name": "createFund", "outputs": [{ "internalType": "address", "name": "newFundAddress", "type": "address" }], "stateMutability": "nonpayable", "type": "function" },
-    { "inputs": [], "name": "getDeployedFunds", "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }], "stateMutability": "view", "type": "function" }
-];
 // ----------------------------------------------
 
 
@@ -66,7 +58,7 @@ const FeeSetting = ({ title, description, isEnabled, onToggle, children }: { tit
     <div className="p-4 border rounded-lg bg-gray-50">
         <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">{title}</h3>
-            <Switch checked={isEnabled} onChange={onToggle} />
+            <Switch checked={isEnabled} onChange={onToggle} label={title} />
         </div>
         <p className="text-sm text-gray-600 mt-1">{description}</p>
         {isEnabled && <div className="mt-4 space-y-4">{children}</div>}
@@ -128,17 +120,81 @@ const CreateFundPage: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            const factoryContract = new ethers.Contract(FUND_FACTORY_ADDRESS, FUND_FACTORY_ABI, signer);
+            const fundDeployer = new ethers.Contract(FUND_DEPLOYER_ADDRESS, FUND_DEPLOYER_ABI, signer);
             const assetAddress = DENOMINATION_ASSET_ADDRESSES[denominationAsset];
-
             if (!assetAddress) {
-                throw new Error(`不支援的計價資產: ${denominationAsset}`);
+                throw new Error(`Unsupported denomination asset: ${denominationAsset}`);
             }
 
-            const tx = await factoryContract.createFund(fundName, fundSymbol, assetAddress);
-            setTxHash(tx.hash);
+            // Step 2: Prepare Fee and Policy Settings
+            const defaultAbiCoder = new ethers.AbiCoder();
+            let feeManagerConfigData = '0x';
+            let policyManagerConfigData = '0x';
 
-            await tx.wait(); // Wait for transaction to be mined
+            // Encode FeeManager data if entrance fee is enabled
+            if (fees.entrance.enabled && ENTRANCE_RATE_DIRECT_FEE_ADDRESS) {
+                // Rate is in %, convert to basis points (1% = 100)
+                const rateInBps = fees.entrance.rate * 100;
+                const entranceFeeSettings = defaultAbiCoder.encode(
+                    ['uint256', 'address'],
+                    [rateInBps, await signer.getAddress()] // Fee recipient is the fund manager
+                );
+
+                feeManagerConfigData = defaultAbiCoder.encode(
+                    ['address[]', 'bytes[]'],
+                    [[ENTRANCE_RATE_DIRECT_FEE_ADDRESS], [entranceFeeSettings]]
+                );
+            }
+
+            // Encode PolicyManager data if depositor whitelist is enabled
+            if (policies.depositorWhitelist.enabled && ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS) {
+                const addresses = policies.depositorWhitelist.list
+                    .split('\n')
+                    .map(addr => addr.trim())
+                    .filter(addr => ethers.isAddress(addr));
+
+                if (addresses.length > 0) {
+                    // For this policy, we create a new list on-the-fly.
+                    // The policy expects a `bytes[]` for `newListsData`. Each `bytes` item
+                    // contains the encoded parameters for creating a list via `AddressListRegistry`.
+                    // The format for `AddressListRegistry.createList` is `(address, uint8, address[])`.
+                    // We will set the fund manager as the owner and use `UpdateType.None` (0).
+                    const newListData = defaultAbiCoder.encode(
+                        ['address', 'uint8', 'address[]'],
+                        [await signer.getAddress(), 0, addresses]
+                    );
+
+                    const policySettingsData = defaultAbiCoder.encode(
+                        ['uint256[]', 'bytes[]'],
+                        [[], [newListData]] // No existing lists, one new list
+                    );
+
+                    policyManagerConfigData = defaultAbiCoder.encode(
+                        ['address[]', 'bytes[]'],
+                        [[ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS], [policySettingsData]]
+                    );
+                }
+            }
+
+            // Step 3: Construct the full Comptroller Config
+            const comptrollerConfig = {
+                denominationAsset: assetAddress,
+                sharesActionTimelock: 0, // No timelock
+                feeManagerConfigData: feeManagerConfigData,
+                policyManagerConfigData: policyManagerConfigData,
+                extensionsConfig: []
+            };
+
+            // Step 4: Call createNewFund
+            const tx = await fundDeployer.createNewFund(
+                await signer.getAddress(),
+                fundName,
+                fundSymbol,
+                comptrollerConfig
+            );
+
+            setTxHash(tx.hash);
+            await tx.wait();
 
             alert('基金創建成功！');
             navigate('/dashboard/manager');
@@ -227,7 +283,7 @@ const CreateFundPage: React.FC = () => {
                                     <h2 className="text-3xl font-bold text-gray-900 mb-2">申購策略</h2>
                                     <p className="text-gray-500 mb-8">設定誰可以投資您的基金，以及投資的額度限制。</p>
                                     <FeeSetting title="投資人白名單" description="開啟後，只有白名單內的錢包地址才能申購基金份額。" isEnabled={policies.depositorWhitelist.enabled} onToggle={v => setPolicies(p => ({ ...p, depositorWhitelist: { ...p.depositorWhitelist, enabled: v } }))}>
-                                        <div><label htmlFor="depositorWhitelist" className="block text-sm font-medium text-gray-700">錢包地址列表</label><textarea id="depositorWhitelist" rows={3} placeholder="每行一個地址，例如：0x..." className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg"></textarea></div>
+                                        <div><label htmlFor="depositorWhitelist" className="block text-sm font-medium text-gray-700">錢包地址列表</label><textarea id="depositorWhitelist" rows={3} placeholder="每行一個地址，例如：0x..." className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg" value={policies.depositorWhitelist.list} onChange={e => setPolicies(p => ({ ...p, depositorWhitelist: { ...p.depositorWhitelist, list: e.target.value } }))}></textarea></div>
                                     </FeeSetting>
                                     <FeeSetting title="申購限額" description="設定單次申購的最低和最高金額限制。" isEnabled={policies.depositLimits.enabled} onToggle={v => setPolicies(p => ({ ...p, depositLimits: { ...p.depositLimits, enabled: v } }))}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
