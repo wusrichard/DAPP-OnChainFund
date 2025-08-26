@@ -74,6 +74,37 @@ export const VAULT_PROXY_ABI = [
         "name": "getAccessor",
         "outputs": [{ "name": "", "type": "address" }],
         "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            { "internalType": "address", "name": "_recipient", "type": "address" },
+            { "internalType": "uint256", "name": "_sharesQuantity", "type": "uint256" },
+            { "internalType": "address[]", "name": "_additionalAssets", "type": "address[]" },
+            { "internalType": "address[]", "name": "_assetsToSkip", "type": "address[]" }
+        ],
+        "name": "redeemSharesInKind",
+        "outputs": [
+            { "internalType": "address[]", "name": "payoutAssets_", "type": "address[]" },
+            { "internalType": "uint256[]", "name": "payoutAmounts_", "type": "uint256[]" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            { "internalType": "address", "name": "_recipient", "type": "address" },
+            { "internalType": "uint256", "name": "_sharesQuantity", "type": "uint256" },
+            { "internalType": "address[]", "name": "_payoutAssets", "type": "address[]" },
+            { "internalType": "uint256[]", "name": "_payoutAssetPercentages", "type": "uint256[]" }
+        ],
+        "name": "redeemSharesForSpecificAssets",
+        "outputs": [
+            { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
 ];
 
