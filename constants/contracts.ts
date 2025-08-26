@@ -118,6 +118,14 @@ export const COMPTROLLER_ABI = [
         "type": "function"
     },
     {
+        "constant": true,
+        "inputs": [],
+        "name": "getVaultProxy",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "constant": false,
         "inputs": [
             { "name": "recipient", "type": "address" },
