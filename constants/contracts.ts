@@ -1,4 +1,40 @@
-// ABI for the FundDeployer contract
+/**
+ * This file contains the ABI and addresses for the smart contracts used in the application.
+ * It serves as a single source of truth to avoid duplication and ease maintenance.
+ */
+
+// --- ABIs ---
+
+/**
+ * Standard ERC20 token ABI, including functions for balance, allowance, and approval.
+ */
+export const ERC20_ABI = [
+    {
+        "constant": true,
+        "inputs": [{ "name": "account", "type": "address" }],
+        "name": "balanceOf",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [{ "name": "owner", "type": "address" }, { "name": "spender", "type": "address" }],
+        "name": "allowance",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{ "name": "spender", "type": "address" }, { "name": "amount", "type": "uint256" }],
+        "name": "approve",
+        "outputs": [{ "name": "", "type": "bool" }],
+        "type": "function"
+    }
+];
+
+/**
+ * ABI for the FundDeployer contract, used for creating new funds.
+ */
 export const FUND_DEPLOYER_ABI = [
     {
         "inputs": [
@@ -27,6 +63,76 @@ export const FUND_DEPLOYER_ABI = [
         "type": "function"
     }
 ];
+
+/**
+ * ABI for a fund's VaultProxy, which holds the assets.
+ */
+export const VAULT_PROXY_ABI = [
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "getAccessor",
+        "outputs": [{ "name": "", "type": "address" }],
+        "type": "function"
+    }
+];
+
+/**
+ * ABI for a fund's Comptroller, which manages logic and policies.
+ */
+export const COMPTROLLER_ABI = [
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "calcGav",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "calcGrossShareValue",
+        "outputs": [{ "name": "", "type": "uint256" }],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{ "name": "_investmentAmount", "type": "uint256" }, { "name": "_minSharesQuantity", "type": "uint256" }],
+        "name": "buyShares",
+        "outputs": [],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [{ "name": "_minSharesQuantity", "type": "uint256" }],
+        "name": "buySharesWithEth",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "getDenominationAsset",
+        "outputs": [{ "name": "", "type": "address" }],
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            { "name": "recipient", "type": "address" },
+            { "name": "shareQuantity", "type": "uint256" },
+            { "name": "payoutAssets", "type": "address[]" },
+            { "name": "payoutAssetPercentages", "type": "address[]" }
+        ],
+        "name": "redeemSharesInKind",
+        "outputs": [],
+        "type": "function"
+    }
+];
+
+
+// --- Addresses ---
 
 export const FUND_DEPLOYER_ADDRESS = import.meta.env.VITE_FUND_DEPLOYER_ADDRESS;
 export const DENOMINATION_ASSET_ADDRESSES: { [key: string]: string } = {
