@@ -5,14 +5,17 @@ interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   id?: string;
+  label?: string;
 }
 
-const Switch: React.FC<SwitchProps> = ({ checked, onChange, id }) => {
+const Switch: React.FC<SwitchProps> = ({ checked, onChange, id, label }) => {
   return (
     <label className="relative inline-block w-[44px] h-[24px]">
       <input
         type="checkbox"
         id={id}
+        role="switch"
+        aria-label={label}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         className="opacity-0 w-0 h-0"
