@@ -1,16 +1,27 @@
+import { ethers } from 'ethers';
+
 /**
  * This file contains the ABI and addresses for the smart contracts used in the application.
  * It serves as a single source of truth to avoid duplication and ease maintenance.
+ *
+ * It also cleans and checksums addresses read from environment variables.
  */
 
-console.log("--- Loading Environment Variables from .env ---");
-console.log("VITE_FUND_DEPLOYER_ADDRESS:", import.meta.env.VITE_FUND_DEPLOYER_ADDRESS);
-console.log("VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS:", import.meta.env.VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS);
-console.log("VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS:", import.meta.env.VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS);
-console.log("VITE_USDC_ADDRESS:", import.meta.env.VITE_USDC_ADDRESS);
-console.log("VITE_WETH_ADDRESS:", import.meta.env.VITE_WETH_ADDRESS);
-console.log("VITE_ASVT_ADDRESS:", import.meta.env.VITE_ASVT_ADDRESS);
-console.log("-------------------------------------------------");
+// Helper function to safely get a checksummed address from env
+const getAddressFromEnv = (key: string): string => {
+    const address = import.meta.env[key];
+    if (!address || address.trim() === '') {
+        console.warn(`Environment variable ${key} is not set or is empty.`);
+        return ethers.ZeroAddress;
+    }
+    try {
+        return ethers.getAddress(address);
+    } catch (e) {
+        console.error(`Invalid address for ${key}: "${address}"`, e);
+        return ethers.ZeroAddress;
+    }
+};
+
 
 // --- ABIs ---
 
@@ -182,11 +193,12 @@ export const COMPTROLLER_ABI = [
 
 // --- Addresses ---
 
-export const FUND_DEPLOYER_ADDRESS = import.meta.env.VITE_FUND_DEPLOYER_ADDRESS;
+export const FUND_DEPLOYER_ADDRESS = getAddressFromEnv('VITE_FUND_DEPLOYER_ADDRESS');
+export const ENTRANCE_RATE_DIRECT_FEE_ADDRESS = getAddressFromEnv('VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS');
+export const ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS = getAddressFromEnv('VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS');
+
 export const DENOMINATION_ASSET_ADDRESSES: { [key: string]: string } = {
-    'USDC': import.meta.env.VITE_USDC_ADDRESS,
-    'WETH': import.meta.env.VITE_WETH_ADDRESS,
-    'ASVT': import.meta.env.VITE_ASVT_ADDRESS,
+    'USDC': getAddressFromEnv('VITE_USDC_ADDRESS'),
+    'WETH': getAddressFromEnv('VITE_WETH_ADDRESS'),
+    'ASVT': getAddressFromEnv('VITE_ASVT_ADDRESS'),
 };
-export const ENTRANCE_RATE_DIRECT_FEE_ADDRESS = import.meta.env.VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS;
-export const ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS = import.meta.env.VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS;
