@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
 import { ethers } from 'ethers';
-import { COMPTROLLER_ABI, VAULT_PROXY_ABI } from '../constants/contracts';
+import { BLOCK_EXPLORER_URL, COMPTROLLER_ABI, VAULT_PROXY_ABI } from '../constants/contracts';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
 
 const FundDetails: React.FC = () => (
@@ -100,7 +100,13 @@ const FundRedeemPage: React.FC = () => {
                                     {isRedeeming ? '交易發送中...' : '確認贖回'}
                                 </button>
                             </div>
-                            {txHash && <div className="text-center text-sm text-blue-600 mt-4 break-all">Tx: {txHash}</div>}
+                            {txHash && (
+                                <div className="text-center text-sm mt-4">
+                                    <a href={`${BLOCK_EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+                                        在區塊鏈瀏覽器上查看交易
+                                    </a>
+                                </div>
+                            )}
                             {error && <div className="text-center text-sm text-red-600 mt-4 break-all">Error: {error}</div>}
                         </div>
                     ) : (
