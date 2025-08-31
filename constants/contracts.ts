@@ -3,6 +3,15 @@
  * It serves as a single source of truth to avoid duplication and ease maintenance.
  */
 
+console.log("--- Loading Environment Variables from .env ---");
+console.log("VITE_FUND_DEPLOYER_ADDRESS:", import.meta.env.VITE_FUND_DEPLOYER_ADDRESS);
+console.log("VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS:", import.meta.env.VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS);
+console.log("VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS:", import.meta.env.VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS);
+console.log("VITE_USDC_ADDRESS:", import.meta.env.VITE_USDC_ADDRESS);
+console.log("VITE_WETH_ADDRESS:", import.meta.env.VITE_WETH_ADDRESS);
+console.log("VITE_ASVT_ADDRESS:", import.meta.env.VITE_ASVT_ADDRESS);
+console.log("-------------------------------------------------");
+
 // --- ABIs ---
 
 /**
