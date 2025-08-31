@@ -7,6 +7,7 @@ import { useWallet } from '../contexts/WalletContext';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
 import {
     ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS,
+    BLOCK_EXPLORER_URL,
     DENOMINATION_ASSET_ADDRESSES,
     ENTRANCE_RATE_DIRECT_FEE_ADDRESS, FUND_DEPLOYER_ABI,
     FUND_DEPLOYER_ADDRESS
@@ -349,8 +350,8 @@ const CreateFundPage: React.FC = () => {
                                 {isSubmitting && !txHash && <p className="text-gray-600">正在送出交易，請在您的錢包中確認...</p>}
                                 {txHash && <p className="text-blue-600">交易已送出！等待區塊鏈確認中...</p>}
                                 {txHash && (
-                                    <a href={`https://etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
-                                        在 Etherscan 上查看交易
+                                    <a href={`${BLOCK_EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+                                        在區塊鏈瀏覽器上查看交易
                                     </a>
                                 )}
                                 {error && <p className="text-red-600 font-semibold mt-2">錯誤: {error}</p>}

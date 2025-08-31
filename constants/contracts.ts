@@ -193,6 +193,8 @@ export const COMPTROLLER_ABI = [
 
 // --- Addresses ---
 
+export const BLOCK_EXPLORER_URL = import.meta.env.VITE_BLOCK_EXPLORER_URL || 'https://sepolia.etherscan.io';
+
 export const FUND_DEPLOYER_ADDRESS = getAddressFromEnv('VITE_FUND_DEPLOYER_ADDRESS');
 export const ENTRANCE_RATE_DIRECT_FEE_ADDRESS = getAddressFromEnv('VITE_ENTRANCE_RATE_DIRECT_FEE_ADDRESS');
 export const ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS = getAddressFromEnv('VITE_ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS');
