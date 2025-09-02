@@ -91,6 +91,8 @@ const CreateFundPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [txHash, setTxHash] = useState('');
     const [error, setError] = useState('');
+    const [newComptrollerProxy, setNewComptrollerProxy] = useState('');
+    const [newVaultProxy, setNewVaultProxy] = useState('');
 
 
     const totalSteps = stepsConfig.length;
@@ -187,18 +189,39 @@ const CreateFundPage: React.FC = () => {
             };
 
             // Step 4: Call createNewFund
+            // Step 4: Call createNewFund
             const tx = await fundDeployer.createNewFund(
                 await signer.getAddress(),
                 fundName,
                 fundSymbol,
-                comptrollerConfig
+                assetAddress,
+                0, // sharesActionTimelock
+                feeManagerConfigData,
+                policyManagerConfigData
             );
 
             setTxHash(tx.hash);
-            await tx.wait();
+            const receipt = await tx.wait();
+
+            // Step 5: Parse the event to get the new fund addresses
+            if (receipt?.logs) {
+                const eventInterface = new ethers.Interface(FUND_DEPLOYER_ABI);
+                for (const log of receipt.logs) {
+                    try {
+                        const parsedLog = eventInterface.parseLog(log);
+                        if (parsedLog && parsedLog.name === "NewFundCreated") {
+                            setNewVaultProxy(parsedLog.args.vaultProxy);
+                            setNewComptrollerProxy(parsedLog.args.comptrollerProxy);
+                            break; // Exit loop once found
+                        }
+                    } catch (e) {
+                        // This log might not be from the FundDeployer contract, ignore error
+                    }
+                }
+            }
 
             alert('基金創建成功！');
-            navigate('/dashboard/manager');
+            // navigate('/dashboard/manager'); // Keep user on page to see results
 
         } catch (err: any) {
             const errorMessage = err.reason || err.message || '發生未知錯誤';
@@ -336,11 +359,11 @@ const CreateFundPage: React.FC = () => {
 
                             <div className="mt-12 pt-5 border-t border-gray-200">
                                 <div className="flex justify-between">
-                                    <button type="button" onClick={handlePrev} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled={currentStep === 1}>上一步</button>
+                                    <button type="button" onClick={handlePrev} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled={currentStep === 1 || isSubmitting || newVaultProxy}>上一步</button>
                                     {currentStep < totalSteps ? (
-                                        <button type="button" onClick={handleNext} className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition">下一步</button>
+                                        <button type="button" onClick={handleNext} className="px-6 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition" disabled={isSubmitting || newVaultProxy}>下一步</button>
                                     ) : (
-                                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed" disabled={isSubmitting || !fundName || !fundSymbol}>
+                                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed" disabled={isSubmitting || !fundName || !fundSymbol || !!newVaultProxy}>
                                             {isSubmitting ? '交易處理中...' : '創建基金'}
                                         </button>
                                     )}
@@ -348,13 +371,38 @@ const CreateFundPage: React.FC = () => {
                             </div>
                             <div className="mt-6 text-center text-sm">
                                 {isSubmitting && !txHash && <p className="text-gray-600">正在送出交易，請在您的錢包中確認...</p>}
-                                {txHash && <p className="text-blue-600">交易已送出！等待區塊鏈確認中...</p>}
+                                {txHash && !newVaultProxy && <p className="text-blue-600">交易已送出！等待區塊鏈確認中...</p>}
                                 {txHash && (
-                                    <a href={`${BLOCK_EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
-                                        在區塊鏈瀏覽器上查看交易
-                                    </a>
+                                    <div className="my-4">
+                                        <a href={`${BLOCK_EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+                                            在區塊鏈瀏覽器上查看交易
+                                        </a>
+                                    </div>
                                 )}
                                 {error && <p className="text-red-600 font-semibold mt-2">錯誤: {error}</p>}
+
+                                {newVaultProxy && (
+                                    <div className="mt-6 p-4 border-l-4 border-green-500 bg-green-50 rounded-lg text-left">
+                                        <h4 className="font-bold text-lg text-green-800">🎉 基金創建成功！</h4>
+                                        <p className="text-sm text-gray-700 mt-2">您的新基金合約已成功部署。請妥善保管以下地址：</p>
+                                        <div className="mt-3 space-y-2 text-xs">
+                                            <p>
+                                                <strong className="font-semibold text-gray-600">Vault (資產庫) 地址:</strong>
+                                                <a href={`${BLOCK_EXPLORER_URL}/address/${newVaultProxy}`} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 break-all hover:underline">{newVaultProxy}</a>
+                                            </p>
+                                            <p>
+                                                <strong className="font-semibold text-gray-600">Comptroller (控制器) 地址:</strong>
+                                                <a href={`${BLOCK_EXPLORER_URL}/address/${newComptrollerProxy}`} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 break-all hover:underline">{newComptrollerProxy}</a>
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => navigate('/dashboard/manager')}
+                                            className="mt-4 w-full px-4 py-2 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-all"
+                                        >
+                                            返回基金經理儀表板
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </form>
                     </div>

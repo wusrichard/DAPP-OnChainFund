@@ -12,6 +12,7 @@ import FundDepositPage from './pages/FundDepositPage';
 import FundRedeemPage from './pages/FundRedeemPage';
 import ManageFundPage from './pages/ManageFundPage';
 import TradeTerminalPage from './pages/TradeTerminalPage';
+import ExploreFundsPage from './pages/ExploreFundsPage';
 
 
 const AppLayout = () => {
@@ -39,6 +40,7 @@ const App: React.FC = () => {
           <Route path="/" element={<AppLayout />}>
             <Route index element={<HomePage />} />
             <Route path="create-fund" element={<CreateFundPage />} />
+            <Route path="explore" element={<ExploreFundsPage />} />
             <Route path="dashboard/investor" element={<InvestorDashboardPage />} />
             <Route path="dashboard/manager" element={<ManagerDashboardPage />} />
             <Route path="fund/:fundId/deposit" element={<FundDepositPage />} />
