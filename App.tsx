@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { WalletProvider } from './contexts/WalletContext';
