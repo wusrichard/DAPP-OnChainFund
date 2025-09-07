@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
+import { useFund } from '../contexts/FundContext';
 import { ethers } from 'ethers';
 import { COMPTROLLER_ABI, ERC20_ABI, DENOMINATION_ASSET_ADDRESSES, BLOCK_EXPLORER_URL } from '../constants/contracts';
 import WalletConnectionPrompt from "../components/WalletConnectionPrompt.tsx";
@@ -14,8 +14,8 @@ const FundDetails: React.FC = () => (
 );
 
 const FundDepositPage: React.FC = () => {
-    const { fundId: comptrollerProxyAddress } = useParams<{ fundId: string }>();
     const { signer, isConnected } = useWallet();
+    const { comptrollerProxy: comptrollerProxyAddress } = useFund();
 
     const [amount, setAmount] = useState('');
     const [denominationAsset, setDenominationAsset] = useState<{ address: string; symbol: string } | null>(null);
@@ -27,12 +27,16 @@ const FundDepositPage: React.FC = () => {
 
     useEffect(() => {
         const getDenomination = async () => {
-            if (!comptrollerProxyAddress || !signer) return;
+            if (!comptrollerProxyAddress || !signer) {
+                setDenominationAsset(null);
+                return;
+            };
             try {
+                setError('');
                 const comptroller = new ethers.Contract(comptrollerProxyAddress, COMPTROLLER_ABI, signer);
                 const address = await comptroller.getDenominationAsset();
-                // A real app would look up the symbol from the address
-                setDenominationAsset({ address, symbol: 'ASSET' });
+                const symbol = Object.keys(DENOMINATION_ASSET_ADDRESSES).find(key => DENOMINATION_ASSET_ADDRESSES[key] === address) || 'UNKNOWN';
+                setDenominationAsset({ address, symbol });
             } catch (e) {
                 console.error("Failed to get denomination asset", e);
                 setError("無法加載基金資產資訊");
@@ -92,6 +96,15 @@ const FundDepositPage: React.FC = () => {
 
     if (!isConnected) {
         return <div className="container mx-auto p-4 md:p-8"><WalletConnectionPrompt roleToConnect="investor" message="請連接您的投資人錢包" /></div>;
+    }
+
+    if (!comptrollerProxyAddress) {
+        return (
+            <div className="container mx-auto p-4 md:p-8 text-center">
+                <h1 className="text-2xl font-bold text-gray-800">未選擇基金</h1>
+                <p className="text-gray-600 mt-2">請先創建一個基金或從儀表板選擇一個基金來進行申購。</p>
+            </div>
+        );
     }
 
     return (

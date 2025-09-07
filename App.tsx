@@ -2,6 +2,7 @@
 import React from 'react';
 import { HashRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { WalletProvider } from './contexts/WalletContext';
+import { FundProvider } from './contexts/FundContext';
 
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
@@ -34,20 +35,22 @@ const AppLayout = () => {
 const App: React.FC = () => {
   return (
     <WalletProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="create-fund" element={<CreateFundPage />} />
-            <Route path="dashboard/investor" element={<InvestorDashboardPage />} />
-            <Route path="dashboard/manager" element={<ManagerDashboardPage />} />
-            <Route path="fund/:fundId/deposit" element={<FundDepositPage />} />
-            <Route path="fund/:fundId/redeem" element={<FundRedeemPage />} />
-            <Route path="manage/:fundId" element={<ManageFundPage />} />
-            <Route path="manage/:fundId/trade" element={<TradeTerminalPage />} />
-          </Route>
-        </Routes>
-      </HashRouter>
+      <FundProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="create-fund" element={<CreateFundPage />} />
+              <Route path="dashboard/investor" element={<InvestorDashboardPage />} />
+              <Route path="dashboard/manager" element={<ManagerDashboardPage />} />
+            <Route path="fund/deposit" element={<FundDepositPage />} />
+            <Route path="fund/redeem" element={<FundRedeemPage />} />
+            <Route path="manage" element={<ManageFundPage />} />
+            <Route path="manage/trade" element={<TradeTerminalPage />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </FundProvider>
     </WalletProvider>
   );
 };

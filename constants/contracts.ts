@@ -57,6 +57,19 @@ export const ERC20_ABI = [
  */
 export const FUND_DEPLOYER_ABI = [
     {
+        "anonymous": false,
+        "inputs": [
+            { "indexed": true, "internalType": "address", "name": "creator", "type": "address" },
+            { "indexed": false, "internalType": "address", "name": "comptrollerProxy", "type": "address" },
+            { "indexed": false, "internalType": "address", "name": "vaultProxy", "type": "address" },
+            { "indexed": false, "internalType": "address", "name": "fundDeployer", "type": "address" },
+            { "indexed": false, "internalType": "string", "name": "fundName", "type": "string" },
+            { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+        ],
+        "name": "NewFundCreated",
+        "type": "event"
+    },
+    {
         "inputs": [
             { "internalType": "address", "name": "_fundOwner", "type": "address" },
             { "internalType": "string", "name": "_fundName", "type": "string" },

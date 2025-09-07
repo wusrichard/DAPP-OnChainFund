@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { useWallet } from '../contexts/WalletContext';
+import { useFund } from '../contexts/FundContext';
 import { ethers } from 'ethers';
 import { BLOCK_EXPLORER_URL, COMPTROLLER_ABI, VAULT_PROXY_ABI } from '../constants/contracts';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
@@ -19,31 +19,15 @@ const FundDetails: React.FC = () => (
 );
 
 const FundRedeemPage: React.FC = () => {
-    const { fundId: comptrollerProxyAddress } = useParams<{ fundId: string }>();
     const { signer, isConnected } = useWallet();
+    const { comptrollerProxy: comptrollerProxyAddress, vaultProxy: vaultProxyAddress } = useFund();
 
     const [amount, setAmount] = useState('');
-    const [vaultProxyAddress, setVaultProxyAddress] = useState<string | null>(null);
     const [isRedeeming, setIsRedeeming] = useState(false);
     const [txHash, setTxHash] = useState('');
     const [error, setError] = useState('');
 
     const SHARE_BALANCE = 8695.65; // This would come from a contract call in a real app
-
-    useEffect(() => {
-        const getVaultAddress = async () => {
-            if (!comptrollerProxyAddress || !signer) return;
-            try {
-                const comptroller = new ethers.Contract(comptrollerProxyAddress, COMPTROLLER_ABI, signer);
-                const vaultAddress = await comptroller.getVaultProxy();
-                setVaultProxyAddress(vaultAddress);
-            } catch (e) {
-                console.error("Failed to get vault proxy address", e);
-                setError("無法加載基金資訊");
-            }
-        };
-        getVaultAddress();
-    }, [comptrollerProxyAddress, signer]);
 
     const handleRedeem = async () => {
         if (!signer || !amount || !vaultProxyAddress) return;
@@ -71,6 +55,15 @@ const FundRedeemPage: React.FC = () => {
 
     if (!isConnected) {
         return <div className="container mx-auto p-4 md:p-8"><WalletConnectionPrompt roleToConnect="investor" message="請連接您的投資人錢包" /></div>;
+    }
+
+    if (!comptrollerProxyAddress || !vaultProxyAddress) {
+        return (
+            <div className="container mx-auto p-4 md:p-8 text-center">
+                <h1 className="text-2xl font-bold text-gray-800">未選擇基金</h1>
+                <p className="text-gray-600 mt-2">請先創建一個基金或從儀表板選擇一個基金來進行贖回。</p>
+            </div>
+        );
     }
 
     return (

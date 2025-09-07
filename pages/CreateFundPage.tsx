@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import Switch from '../components/Switch';
 import { useWallet } from '../contexts/WalletContext';
+import { useFund } from '../contexts/FundContext';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
 import {
     ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS,
@@ -69,6 +70,7 @@ const FeeSetting = ({ title, description, isEnabled, onToggle, children }: { tit
 const CreateFundPage: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const { signer, isConnected, role } = useWallet();
+    const { setFund } = useFund();
     const navigate = useNavigate();
 
     // Form State
@@ -195,10 +197,26 @@ const CreateFundPage: React.FC = () => {
             );
 
             setTxHash(tx.hash);
-            await tx.wait();
+            const receipt = await tx.wait();
 
-            alert('基金創建成功！');
-            navigate('/dashboard/manager');
+            // Find the NewFundCreated event in the transaction receipt
+            const fundDeployerInterface = new ethers.Interface(FUND_DEPLOYER_ABI);
+            const eventTopic = fundDeployerInterface.getEvent('NewFundCreated').topicHash;
+
+            const log = receipt.logs.find((l: any) => l.topics[0] === eventTopic);
+            if (!log) {
+                throw new Error('NewFundCreated event not found in transaction receipt');
+            }
+
+            const parsedLog = fundDeployerInterface.parseLog(log);
+            const { comptrollerProxy, vaultProxy } = parsedLog.args;
+
+            // Save the addresses to the context
+            setFund(comptrollerProxy, vaultProxy);
+
+            alert(`基金創建成功！\nComptroller: ${comptrollerProxy}\nVault: ${vaultProxy}`);
+            // Navigate to the deposit page for the new fund
+            navigate(`/fund/deposit`);
 
         } catch (err: any) {
             const errorMessage = err.reason || err.message || '發生未知錯誤';
