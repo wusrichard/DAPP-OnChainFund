@@ -179,21 +179,15 @@ const CreateFundPage: React.FC = () => {
                 }
             }
 
-            // Step 3: Construct the full Comptroller Config
-            const comptrollerConfig = {
-                denominationAsset: assetAddress,
-                sharesActionTimelock: 0, // No timelock
-                feeManagerConfigData: feeManagerConfigData,
-                policyManagerConfigData: policyManagerConfigData,
-                extensionsConfig: []
-            };
-
-            // Step 4: Call createNewFund
+            // Step 4: Call createNewFund with flattened arguments
             const tx = await fundDeployer.createNewFund(
                 await signer.getAddress(),
                 fundName,
                 fundSymbol,
-                comptrollerConfig
+                assetAddress, // _denominationAsset
+                0, // _sharesActionTimelock
+                feeManagerConfigData, // _feeManagerConfigData
+                policyManagerConfigData // _policyManagerConfigData
             );
 
             setTxHash(tx.hash);
@@ -216,7 +210,7 @@ const CreateFundPage: React.FC = () => {
 
             alert(`基金創建成功！\nComptroller: ${comptrollerProxy}\nVault: ${vaultProxy}`);
             // Navigate to the deposit page for the new fund
-            navigate(`/fund/deposit`);
+            navigate(`/fund/${comptrollerProxy}/deposit`);
 
         } catch (err: any) {
             const errorMessage = err.reason || err.message || '發生未知錯誤';
