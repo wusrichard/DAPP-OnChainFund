@@ -60,11 +60,8 @@ export const FUND_DEPLOYER_ABI = [
         "anonymous": false,
         "inputs": [
             { "indexed": true, "internalType": "address", "name": "creator", "type": "address" },
-            { "indexed": false, "internalType": "address", "name": "comptrollerProxy", "type": "address" },
             { "indexed": false, "internalType": "address", "name": "vaultProxy", "type": "address" },
-            { "indexed": false, "internalType": "address", "name": "fundDeployer", "type": "address" },
-            { "indexed": false, "internalType": "string", "name": "fundName", "type": "string" },
-            { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+            { "indexed": false, "internalType": "address", "name": "comptrollerProxy", "type": "address" }
         ],
         "name": "NewFundCreated",
         "type": "event"
