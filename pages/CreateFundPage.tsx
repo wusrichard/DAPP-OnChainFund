@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import Switch from '../components/Switch';
 import { useWallet } from '../contexts/WalletContext';
+import { useFund } from '../contexts/FundContext';
 import WalletConnectionPrompt from '../components/WalletConnectionPrompt';
 import {
     ALLOWED_DEPOSIT_RECIPIENTS_POLICY_ADDRESS,
@@ -69,6 +70,7 @@ const FeeSetting = ({ title, description, isEnabled, onToggle, children }: { tit
 const CreateFundPage: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const { signer, isConnected, role } = useWallet();
+    const { setFund } = useFund();
     const navigate = useNavigate();
 
     // Form State
@@ -177,28 +179,38 @@ const CreateFundPage: React.FC = () => {
                 }
             }
 
-            // Step 3: Construct the full Comptroller Config
-            const comptrollerConfig = {
-                denominationAsset: assetAddress,
-                sharesActionTimelock: 0, // No timelock
-                feeManagerConfigData: feeManagerConfigData,
-                policyManagerConfigData: policyManagerConfigData,
-                extensionsConfig: []
-            };
-
-            // Step 4: Call createNewFund
+            // Step 4: Call createNewFund with flattened arguments
             const tx = await fundDeployer.createNewFund(
                 await signer.getAddress(),
                 fundName,
                 fundSymbol,
-                comptrollerConfig
+                assetAddress, // _denominationAsset
+                0, // _sharesActionTimelock
+                feeManagerConfigData, // _feeManagerConfigData
+                policyManagerConfigData // _policyManagerConfigData
             );
 
             setTxHash(tx.hash);
-            await tx.wait();
+            const receipt = await tx.wait();
 
-            alert('基金創建成功！');
-            navigate('/dashboard/manager');
+            // Find the NewFundCreated event in the transaction receipt
+            const fundDeployerInterface = new ethers.Interface(FUND_DEPLOYER_ABI);
+            const eventTopic = fundDeployerInterface.getEvent('NewFundCreated').topicHash;
+
+            const log = receipt.logs.find((l: any) => l.topics[0] === eventTopic);
+            if (!log) {
+                throw new Error('NewFundCreated event not found in transaction receipt');
+            }
+
+            const parsedLog = fundDeployerInterface.parseLog(log);
+            const { comptrollerProxy, vaultProxy } = parsedLog.args;
+
+            // Save the addresses to the context
+            setFund(comptrollerProxy, vaultProxy);
+
+            alert(`基金創建成功！\nComptroller: ${comptrollerProxy}\nVault: ${vaultProxy}`);
+            // Navigate to the deposit page for the new fund
+            navigate(`/fund/${comptrollerProxy}/deposit`);
 
         } catch (err: any) {
             const errorMessage = err.reason || err.message || '發生未知錯誤';

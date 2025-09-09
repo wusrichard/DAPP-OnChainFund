@@ -57,22 +57,24 @@ export const ERC20_ABI = [
  */
 export const FUND_DEPLOYER_ABI = [
     {
+        "anonymous": false,
+        "inputs": [
+            { "indexed": true, "internalType": "address", "name": "creator", "type": "address" },
+            { "indexed": false, "internalType": "address", "name": "vaultProxy", "type": "address" },
+            { "indexed": false, "internalType": "address", "name": "comptrollerProxy", "type": "address" }
+        ],
+        "name": "NewFundCreated",
+        "type": "event"
+    },
+    {
         "inputs": [
             { "internalType": "address", "name": "_fundOwner", "type": "address" },
             { "internalType": "string", "name": "_fundName", "type": "string" },
             { "internalType": "string", "name": "_fundSymbol", "type": "string" },
-            {
-                "components": [
-                    { "internalType": "address", "name": "denominationAsset", "type": "address" },
-                    { "internalType": "uint256", "name": "sharesActionTimelock", "type": "uint256" },
-                    { "internalType": "bytes", "name": "feeManagerConfigData", "type": "bytes" },
-                    { "internalType": "bytes", "name": "policyManagerConfigData", "type": "bytes" },
-                    { "components": [], "internalType": "struct IComptroller.ExtensionConfigInput[]", "name": "extensionsConfig", "type": "tuple[]" }
-                ],
-                "internalType": "struct IComptroller.ConfigInput",
-                "name": "_comptrollerConfig",
-                "type": "tuple"
-            }
+            { "internalType": "address", "name": "_denominationAsset", "type": "address" },
+            { "internalType": "uint256", "name": "_sharesActionTimelock", "type": "uint256" },
+            { "internalType": "bytes", "name": "_feeManagerConfigData", "type": "bytes" },
+            { "internalType": "bytes", "name": "_policyManagerConfigData", "type": "bytes" }
         ],
         "name": "createNewFund",
         "outputs": [
