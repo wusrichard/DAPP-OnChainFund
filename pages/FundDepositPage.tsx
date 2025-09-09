@@ -82,7 +82,7 @@ const FundDepositPage: React.FC = () => {
         setTxHash('');
         try {
             const investmentAmount = ethers.parseUnits(amount, 18); // Assuming 18 decimals
-            const minSharesQuantity = 0;
+            const minSharesQuantity = 1; // Set to 1 to satisfy the contract's >0 requirement
             const comptrollerContract = new ethers.Contract(comptrollerProxy, COMPTROLLER_ABI, signer);
 
             const tx = await comptrollerContract.buyShares(investmentAmount, minSharesQuantity);
